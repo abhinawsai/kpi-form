@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KPI Entry Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .form-container {
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .submit-button {
+            width: 100%;
+            padding: 10px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .submit-button:hover {
+            background: #4338CA;
+        }
+        .submit-button:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        .loading {
+            color: #4F46E5;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        function KPIForm() {
+            // Replace this URL with your Google Apps Script deployment URL
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlak8ZG4LikYZMjvDEQ3VEuiaCGsOKhQoMOP8UdiXy8HC3BHKcxVINCFqMuN-pLxCF/exec';
+            
+            const [formType, setFormType] = React.useState('feedback');
+            const [formData, setFormData] = React.useState({
+                course: '',
+                kpi1: '',
+                kpi2: ''
+            });
+            const [error, setError] = React.useState('');
+            const [success, setSuccess] = React.useState(false);
+            const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+            const validateForm = () => {
+                if (!formData.course) {
+                    setError('Please enter a course name and number');
+                    return false;
+                }
+                
+                const kpi1Num = Number(formData.kpi1);
+                const kpi2Num = Number(formData.kpi2);
+                
+                if (formType === 'feedback') {
+                    if (kpi1Num < 1 || kpi1Num > 10) {
+                        setError('Feedback quality score must be between 1 and 10');
+                        return false;
+                    }
+                    if (kpi2Num < 0) {
+                        setError('Turnaround days cannot be negative');
+                        return false;
+                    }
+                } else {
+                    if (kpi1Num < 1 || kpi1Num > 10 || kpi2Num < 1 || kpi2Num > 10) {
+                        setError('Integration scores must be between 1 and 10');
+                        return false;
+                    }
+                }
+                
+                setError('');
+                return true;
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (validateForm()) {
+                    setIsSubmitting(true);
+                    try {
+                        const response = await fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                type: formType,
+                                course: formData.course,
+                                kpi1: formData.kpi1,
+                                kpi2: formData.kpi2
+                            })
+                        });
+
+                        const result = await response.json();
+                        
+                        if (result.status === 'success') {
+                            setSuccess(true);
+                            setTimeout(() => setSuccess(false), 3000);
+                            setFormData({
+                                course: '',
+                                kpi1: '',
+                                kpi2: ''
+                            });
+                        } else {
+                            setError('Failed to submit the form. Please try again.');
+                        }
+                    } catch (err) {
+                        setError('Failed to submit the form. Please try again.');
+                        console.error('Submission error:', err);
+                    } finally {
+                        setIsSubmitting(false);
+                    }
+                }
+            };
+
+            return (
+                <div className="form-container">
+                    <h2 style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem'}}>KPI Entry Form</h2>
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label className="form-label">Entry Type</label>
+                            <select 
+                                className="form-select"
+                                value={formType}
+                                onChange={(e) => setFormType(e.target.value)}
+                                disabled={isSubmitting}
+                            >
+                                <option value="feedback">Assignment Feedback</option>
+                                <option value="integration">Course Content Integration</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Course Name and Number</label>
+                            <input
+                                className="form-input"
+                                value={formData.course}
+                                onChange={(e) => setFormData({...formData, course: e.target.value})}
+                                placeholder="e.g., COMP101"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">
+                                {formType === 'feedback' ? 'Feedback Quality Score (1-10)' : 'Integration Quantity Score (1-10)'}
+                            </label>
+                            <input
+                                className="form-input"
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={formData.kpi1}
+                                onChange={(e) => setFormData({...formData, kpi1: e.target.value})}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">
+                                {formType === 'feedback' 
+                                    ? 'Feedback Turnaround (Days)' 
+                                    : 'Integration Quality Score (1-10)'}
+                            </label>
+                            <input
+                                className="form-input"
+                                type="number"
+                                min={formType === 'feedback' ? "0" : "1"}
+                                max={formType === 'integration' ? "10" : undefined}
+                                value={formData.kpi2}
+                                onChange={(e) => setFormData({...formData, kpi2: e.target.value})}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        {error && <div className="error">{error}</div>}
+                        {success && <div className="success">Entry saved successfully!</div>}
+                        {isSubmitting && <div className="loading">Submitting...</div>}
+
+                        <button 
+                            type="submit" 
+                            className="submit-button"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Submit Entry'}
+                        </button>
+                    </form>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<KPIForm />, document.getElementById('root'));
+    </script>
+</body>
+</html>
