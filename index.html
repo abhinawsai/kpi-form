@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .form-container {
-            max-width: 500px;
+            max-width: 600px;
             margin: 20px auto;
             padding: 20px;
             background: white;
@@ -63,6 +63,11 @@
             color: #4F46E5;
             margin-top: 10px;
         }
+        .kpi-description {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -70,39 +75,148 @@
     <script type="text/babel">
         function KPIForm() {
             // Replace this URL with your Google Apps Script deployment URL
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlak8ZG4LikYZMjvDEQ3VEuiaCGsOKhQoMOP8UdiXy8HC3BHKcxVINCFqMuN-pLxCF/exec';
+            const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
             
             const [formType, setFormType] = React.useState('feedback');
             const [formData, setFormData] = React.useState({
                 course: '',
                 kpi1: '',
-                kpi2: ''
+                kpi2: '',
+                kpi3: ''
             });
             const [error, setError] = React.useState('');
             const [success, setSuccess] = React.useState(false);
             const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+            const formTypes = {
+                feedback: {
+                    title: 'Assignment Feedback',
+                    courseLabel: 'Course Name and Number',
+                    kpi1: {
+                        label: 'Feedback Quality Score',
+                        description: 'Score between 1 to 10',
+                        min: 1,
+                        max: 10,
+                        type: 'number'
+                    },
+                    kpi2: {
+                        label: 'Timeliness of Feedback',
+                        description: 'Turnaround in days',
+                        min: 0,
+                        type: 'number'
+                    }
+                },
+                integration: {
+                    title: 'Course Content Integration',
+                    courseLabel: 'Course Name and Number',
+                    kpi1: {
+                        label: 'Integration Quantity Score',
+                        description: 'Score between 1 to 10',
+                        min: 1,
+                        max: 10,
+                        type: 'number'
+                    },
+                    kpi2: {
+                        label: 'Integration Quality Score',
+                        description: 'Score between 1 to 10',
+                        min: 1,
+                        max: 10,
+                        type: 'number'
+                    }
+                },
+                research: {
+                    title: 'PG Research Submission Quality',
+                    courseLabel: 'Course Name and Number',
+                    kpi1: {
+                        label: 'Number of Extensions',
+                        description: 'Total extensions requested',
+                        min: 0,
+                        type: 'number'
+                    },
+                    kpi2: {
+                        label: 'Number of Student Complaints',
+                        description: 'Total complaints received',
+                        min: 0,
+                        type: 'number'
+                    }
+                },
+                canvas: {
+                    title: 'Canvas Quality for PG Research Projects',
+                    courseLabel: 'Course Name and Number',
+                    kpi1: {
+                        label: 'Module End-point Quiz Performance',
+                        description: 'Performance percentage',
+                        min: 0,
+                        max: 100,
+                        type: 'number',
+                        suffix: '%'
+                    },
+                    kpi2: {
+                        label: 'Rate of Completion',
+                        description: 'Completion percentage',
+                        min: 0,
+                        max: 100,
+                        type: 'number',
+                        suffix: '%'
+                    }
+                },
+                jobs: {
+                    title: 'Jobs',
+                    courseLabel: 'Programme Name',
+                    kpi1: {
+                        label: 'Exit Survey Performance',
+                        description: 'Performance percentage',
+                        min: 0,
+                        max: 100,
+                        type: 'number',
+                        suffix: '%'
+                    },
+                    kpi2: {
+                        label: 'Number of Internships/Similar',
+                        description: 'Total count',
+                        min: 0,
+                        type: 'number'
+                    },
+                    kpi3: {
+                        label: 'Professional Relevance Score',
+                        description: 'Score between 1 to 10',
+                        min: 1,
+                        max: 10,
+                        type: 'number'
+                    }
+                }
+            };
+
             const validateForm = () => {
                 if (!formData.course) {
-                    setError('Please enter a course name and number');
+                    setError(`Please enter ${formTypes[formType].courseLabel}`);
                     return false;
                 }
+
+                const currentType = formTypes[formType];
                 
+                // Validate KPI1
                 const kpi1Num = Number(formData.kpi1);
+                if (isNaN(kpi1Num) || kpi1Num < currentType.kpi1.min || 
+                    (currentType.kpi1.max && kpi1Num > currentType.kpi1.max)) {
+                    setError(`${currentType.kpi1.label} must be between ${currentType.kpi1.min} and ${currentType.kpi1.max || 'above'}`);
+                    return false;
+                }
+
+                // Validate KPI2
                 const kpi2Num = Number(formData.kpi2);
-                
-                if (formType === 'feedback') {
-                    if (kpi1Num < 1 || kpi1Num > 10) {
-                        setError('Feedback quality score must be between 1 and 10');
-                        return false;
-                    }
-                    if (kpi2Num < 0) {
-                        setError('Turnaround days cannot be negative');
-                        return false;
-                    }
-                } else {
-                    if (kpi1Num < 1 || kpi1Num > 10 || kpi2Num < 1 || kpi2Num > 10) {
-                        setError('Integration scores must be between 1 and 10');
+                if (isNaN(kpi2Num) || kpi2Num < currentType.kpi2.min || 
+                    (currentType.kpi2.max && kpi2Num > currentType.kpi2.max)) {
+                    setError(`${currentType.kpi2.label} must be between ${currentType.kpi2.min} and ${currentType.kpi2.max || 'above'}`);
+                    return false;
+                }
+
+                // Validate KPI3 if it exists
+                if (currentType.kpi3) {
+                    const kpi3Num = Number(formData.kpi3);
+                    if (isNaN(kpi3Num) || kpi3Num < currentType.kpi3.min || 
+                        (currentType.kpi3.max && kpi3Num > currentType.kpi3.max)) {
+                        setError(`${currentType.kpi3.label} must be between ${currentType.kpi3.min} and ${currentType.kpi3.max || 'above'}`);
                         return false;
                     }
                 }
@@ -118,11 +232,16 @@
                     try {
                         const response = await fetch(SCRIPT_URL, {
                             method: 'POST',
+                            mode: 'cors',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
                             body: JSON.stringify({
                                 type: formType,
                                 course: formData.course,
                                 kpi1: formData.kpi1,
-                                kpi2: formData.kpi2
+                                kpi2: formData.kpi2,
+                                kpi3: formData.kpi3
                             })
                         });
 
@@ -134,19 +253,22 @@
                             setFormData({
                                 course: '',
                                 kpi1: '',
-                                kpi2: ''
+                                kpi2: '',
+                                kpi3: ''
                             });
                         } else {
                             setError('Failed to submit the form. Please try again.');
                         }
                     } catch (err) {
-                        setError('Failed to submit the form. Please try again.');
+                        setError('Failed to submit the form. Please try again. Error: ' + err.message);
                         console.error('Submission error:', err);
                     } finally {
                         setIsSubmitting(false);
                     }
                 }
             };
+
+            const currentType = formTypes[formType];
 
             return (
                 <div className="form-container">
@@ -157,34 +279,44 @@
                             <select 
                                 className="form-select"
                                 value={formType}
-                                onChange={(e) => setFormType(e.target.value)}
+                                onChange={(e) => {
+                                    setFormType(e.target.value);
+                                    setFormData({
+                                        course: '',
+                                        kpi1: '',
+                                        kpi2: '',
+                                        kpi3: ''
+                                    });
+                                }}
                                 disabled={isSubmitting}
                             >
                                 <option value="feedback">Assignment Feedback</option>
                                 <option value="integration">Course Content Integration</option>
+                                <option value="research">PG Research Submission Quality</option>
+                                <option value="canvas">Canvas Quality for PG Research</option>
+                                <option value="jobs">Jobs</option>
                             </select>
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Course Name and Number</label>
+                            <label className="form-label">{currentType.courseLabel}</label>
                             <input
                                 className="form-input"
                                 value={formData.course}
                                 onChange={(e) => setFormData({...formData, course: e.target.value})}
-                                placeholder="e.g., COMP101"
+                                placeholder={`e.g., ${formType === 'jobs' ? 'BSc Computing' : 'COMP101'}`}
                                 disabled={isSubmitting}
                             />
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">
-                                {formType === 'feedback' ? 'Feedback Quality Score (1-10)' : 'Integration Quantity Score (1-10)'}
-                            </label>
+                            <label className="form-label">{currentType.kpi1.label}</label>
+                            <div className="kpi-description">{currentType.kpi1.description}</div>
                             <input
                                 className="form-input"
-                                type="number"
-                                min="1"
-                                max="10"
+                                type={currentType.kpi1.type}
+                                min={currentType.kpi1.min}
+                                max={currentType.kpi1.max}
                                 value={formData.kpi1}
                                 onChange={(e) => setFormData({...formData, kpi1: e.target.value})}
                                 disabled={isSubmitting}
@@ -192,21 +324,34 @@
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">
-                                {formType === 'feedback' 
-                                    ? 'Feedback Turnaround (Days)' 
-                                    : 'Integration Quality Score (1-10)'}
-                            </label>
+                            <label className="form-label">{currentType.kpi2.label}</label>
+                            <div className="kpi-description">{currentType.kpi2.description}</div>
                             <input
                                 className="form-input"
-                                type="number"
-                                min={formType === 'feedback' ? "0" : "1"}
-                                max={formType === 'integration' ? "10" : undefined}
+                                type={currentType.kpi2.type}
+                                min={currentType.kpi2.min}
+                                max={currentType.kpi2.max}
                                 value={formData.kpi2}
                                 onChange={(e) => setFormData({...formData, kpi2: e.target.value})}
                                 disabled={isSubmitting}
                             />
                         </div>
+
+                        {currentType.kpi3 && (
+                            <div className="form-group">
+                                <label className="form-label">{currentType.kpi3.label}</label>
+                                <div className="kpi-description">{currentType.kpi3.description}</div>
+                                <input
+                                    className="form-input"
+                                    type={currentType.kpi3.type}
+                                    min={currentType.kpi3.min}
+                                    max={currentType.kpi3.max}
+                                    value={formData.kpi3}
+                                    onChange={(e) => setFormData({...formData, kpi3: e.target.value})}
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                        )}
 
                         {error && <div className="error">{error}</div>}
                         {success && <div className="success">Entry saved successfully!</div>}
